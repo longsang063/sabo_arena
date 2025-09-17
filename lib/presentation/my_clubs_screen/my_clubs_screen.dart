@@ -70,8 +70,8 @@ class _MyClubsScreenState extends State<MyClubsScreen> {
           Navigator.pushNamed(context, '/club_registration_screen')
               .then((_) => _loadMyClubs());
         },
-        child: const Icon(Icons.add),
         tooltip: 'Đăng ký CLB mới',
+        child: const Icon(Icons.add),
       ),
     );
   }

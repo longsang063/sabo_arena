@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:sabo_arena/core/app_export.dart';
 import 'package:sabo_arena/theme/theme_extensions.dart';
 import 'package:sabo_arena/utils/size_extensions.dart';
+import '../../services/bracket_generator_service.dart';
+import '../../core/constants/tournament_constants.dart';
 
 class TournamentCreationWizard extends StatefulWidget {
   final String? clubId;
@@ -22,7 +24,7 @@ class _TournamentCreationWizardState extends State<TournamentCreationWizard>
   int _currentStep = 0;
   
   // Tournament data with comprehensive fields
-  Map<String, dynamic> _tournamentData = {
+  final Map<String, dynamic> _tournamentData = {
     // Basic Info
     'name': '',
     'description': '',
@@ -304,7 +306,7 @@ class _TournamentCreationWizardState extends State<TournamentCreationWizard>
           
           // Game Type
           DropdownButtonFormField<String>(
-            value: _tournamentData['gameType'],
+            initialValue: _tournamentData['gameType'],
             decoration: InputDecoration(
               labelText: 'Môn thi đấu *',
               border: OutlineInputBorder(),
@@ -324,7 +326,7 @@ class _TournamentCreationWizardState extends State<TournamentCreationWizard>
           
           // Tournament Format
           DropdownButtonFormField<String>(
-            value: _tournamentData['format'],
+            initialValue: _tournamentData['format'],
             decoration: InputDecoration(
               labelText: 'Hình thức thi đấu *',
               border: OutlineInputBorder(),
@@ -344,7 +346,7 @@ class _TournamentCreationWizardState extends State<TournamentCreationWizard>
           
           // Max Participants
           DropdownButtonFormField<int>(
-            value: _tournamentData['maxParticipants'],
+            initialValue: _tournamentData['maxParticipants'],
             decoration: InputDecoration(
               labelText: 'Số lượng tham gia *',
               border: OutlineInputBorder(),
@@ -513,7 +515,7 @@ class _TournamentCreationWizardState extends State<TournamentCreationWizard>
           
           // Min Rank
           DropdownButtonFormField<String>(
-            value: _tournamentData['minRank']?.isEmpty == true ? null : _tournamentData['minRank'],
+            initialValue: _tournamentData['minRank']?.isEmpty == true ? null : _tournamentData['minRank'],
             decoration: InputDecoration(
               labelText: 'Hạng tối thiểu',
               border: OutlineInputBorder(),
@@ -529,7 +531,7 @@ class _TournamentCreationWizardState extends State<TournamentCreationWizard>
           
           // Max Rank
           DropdownButtonFormField<String>(
-            value: _tournamentData['maxRank']?.isEmpty == true ? null : _tournamentData['maxRank'],
+            initialValue: _tournamentData['maxRank']?.isEmpty == true ? null : _tournamentData['maxRank'],
             decoration: InputDecoration(
               labelText: 'Hạng tối đa',
               border: OutlineInputBorder(),
@@ -747,18 +749,138 @@ class _TournamentCreationWizardState extends State<TournamentCreationWizard>
     );
   }
 
-  void _validateAndPublish() {
-    // TODO: Add comprehensive validation
+  Future<void> _validateAndPublish() async {
+    // Comprehensive validation
     if (_tournamentData['name']?.isEmpty == true) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Vui lòng nhập tên giải đấu')),
       );
       return;
     }
-    
-    // TODO: Validate all required fields and business logic
-    
-    Navigator.of(context).pop(_tournamentData);
+
+    if (_tournamentData['format']?.isEmpty == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Vui lòng chọn định dạng giải đấu')),
+      );
+      return;
+    }
+
+    if (_tournamentData['maxParticipants'] == null || _tournamentData['maxParticipants'] <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Vui lòng nhập số người tham gia hợp lệ')),
+      );
+      return;
+    }
+
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Đang tạo giải đấu và generate bracket...'),
+            ],
+          ),
+        ),
+      );
+
+      // Create participants for bracket generator
+      final participants = <TournamentParticipant>[];
+      
+      // Convert participants to TournamentParticipant objects
+      final participantsList = _tournamentData['participants'] as List<dynamic>? ?? [];
+      for (int i = 0; i < participantsList.length; i++) {
+        final participant = participantsList[i] as Map<String, dynamic>;
+        participants.add(
+          TournamentParticipant(
+            id: participant['id']?.toString() ?? 'participant_$i',
+            name: participant['name']?.toString() ?? 'Player ${i + 1}',
+            elo: (participant['elo'] as num?)?.toInt() ?? 1000,
+            rank: participant['rank']?.toString() ?? 'K',
+            seed: i + 1,
+          ),
+        );
+      }
+
+      // If no participants, create dummy participants for testing
+      if (participants.isEmpty) {
+        final maxParticipants = _tournamentData['maxParticipants'] as int;
+        for (int i = 0; i < maxParticipants; i++) {
+          participants.add(
+            TournamentParticipant(
+              id: 'participant_$i',
+              name: 'Player ${i + 1}',
+              elo: 1000 + (i * 50), // Varied ELO for testing
+              rank: 'K',
+              seed: i + 1,
+            ),
+          );
+        }
+      }
+
+      // Generate bracket with Tournament Core Logic System
+      final tournamentId = 'tournament_${DateTime.now().millisecondsSinceEpoch}';
+      final bracket = await BracketGeneratorService.generateBracket(
+        tournamentId: tournamentId,
+        format: _mapFormatToString(_tournamentData['format'] as String),
+        participants: participants,
+        seedingMethod: 'rank_based', // Use rank-based seeding for Vietnamese ranking
+        options: {
+          'enableVietnameseRanking': true,
+          'tournamentName': _tournamentData['name'],
+        },
+      );
+
+      Navigator.pop(context); // Close progress dialog
+
+      // Return both tournament data and generated bracket
+      Navigator.of(context).pop({
+        'tournament': _tournamentData,
+        'bracket': bracket,
+        'participants': participants,
+        'success': true,
+      });
+
+    } catch (e) {
+      Navigator.pop(context); // Close progress dialog
+      
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Lỗi tạo giải đấu'),
+          content: Text('Không thể tạo giải đấu: $e'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  // Helper method to map UI format string to TournamentFormats constant
+  String _mapFormatToString(String format) {
+    switch (format.toLowerCase()) {
+      case 'single elimination':
+        return TournamentFormats.singleElimination;
+      case 'double elimination':
+        return TournamentFormats.doubleElimination;
+      case 'round robin':
+        return TournamentFormats.roundRobin;
+      case 'swiss':
+        return TournamentFormats.swiss;
+      case 'parallel groups':
+        return TournamentFormats.parallelGroups;
+      case 'winner takes all':
+        return TournamentFormats.winnerTakesAll;
+      default:
+        return TournamentFormats.singleElimination;
+    }
   }
 
 }

@@ -2,53 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:sabo_arena/core/app_export.dart';
 
 import 'package:sizer/sizer.dart';
-import 'package:sabo_arena/theme/app_theme.dart';
-import 'package:sabo_arena/widgets/custom_image_widget.dart';
-import 'package:sabo_arena/routes/app_routes.dart';
 import '../member_management_screen/member_management_screen.dart';
 import '../tournament_creation_wizard/tournament_creation_wizard.dart';
 import '../tournament_detail_screen/widgets/tournament_management_panel.dart';
 import '../tournament_detail_screen/widgets/tournament_stats_view.dart';
 import '../../services/club_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/club_dashboard_service.dart';
 import '../../models/club.dart';
-
-// Temporary mock classes
-class ClubDashboardStats {
-  final int totalMembers;
-  final int activeMembers;
-  final double monthlyRevenue;
-  final int totalTournaments;
-  final int tournaments;
-  final int ranking;
-  
-  ClubDashboardStats({
-    required this.totalMembers,
-    required this.activeMembers,
-    required this.monthlyRevenue,
-    required this.totalTournaments,
-    required this.tournaments,
-    required this.ranking,
-  });
-}
-
-class ClubActivity {
-  final String title;
-  final String subtitle;
-  final String type;
-  final DateTime timestamp;
-  final String? avatar;
-  final String? icon;
-  
-  ClubActivity({
-    required this.title,
-    required this.subtitle,
-    required this.type,
-    required this.timestamp,
-    this.avatar,
-    this.icon,
-  });
-}
 
 class ClubDashboardScreen extends StatefulWidget {
   const ClubDashboardScreen({super.key});
@@ -1049,32 +1010,12 @@ class _ClubDashboardScreenState extends State<ClubDashboardScreen> {
     });
 
     try {
-      // Load dashboard stats and recent activities in parallel
+      // Load dashboard stats and recent activities from real Supabase data
       final results = await Future.wait([
-        // Mock data for club stats
-        Future.value(ClubDashboardStats(
-          totalMembers: 25,
-          activeMembers: 18,
-          monthlyRevenue: 15000000,
-          totalTournaments: 3,
-          tournaments: 3,
-          ranking: 5,
-        )),
-        // Mock data for recent activities
-        Future.value([
-          ClubActivity(
-            title: 'Thành viên mới tham gia',
-            subtitle: 'Nguyễn Văn A đã tham gia club',
-            type: 'member_join',
-            timestamp: DateTime.now().subtract(Duration(hours: 2)),
-          ),
-          ClubActivity(
-            title: 'Giải đấu kết thúc',
-            subtitle: 'Giải đấu tháng 12 đã hoàn thành',
-            type: 'tournament_end',
-            timestamp: DateTime.now().subtract(Duration(days: 1)),
-          ),
-        ]),
+        // Real club stats from Supabase
+        ClubDashboardService.instance.getClubStats(_currentClub!.id),
+        // Real activities from Supabase
+        ClubDashboardService.instance.getRecentActivities(_currentClub!.id, limit: 5),
       ]);
 
       if (mounted) {

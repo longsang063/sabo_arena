@@ -2,8 +2,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/tournament.dart';
 import '../models/user_profile.dart';
 import '../core/constants/tournament_constants.dart';
-import '../core/constants/ranking_constants.dart';
-import 'ranking_service.dart';
 import 'dart:math' as math;
 
 class TournamentService {

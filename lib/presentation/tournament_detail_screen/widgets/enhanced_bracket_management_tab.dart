@@ -27,9 +27,9 @@ class EnhancedBracketManagementTab extends StatefulWidget {
   final String tournamentId;
 
   const EnhancedBracketManagementTab({
-    Key? key,
+    super.key,
     required this.tournamentId,
-  }) : super(key: key);
+  });
 
   @override
   _EnhancedBracketManagementTabState createState() => _EnhancedBracketManagementTabState();
@@ -674,7 +674,7 @@ class _EnhancedBracketManagementTabState extends State<EnhancedBracketManagement
             SizedBox(height: 8.sp),
             Text('🎯 Seeding: ${_seedingMethods.firstWhere((m) => m['key'] == _selectedSeeding)['label']}'),
             SizedBox(height: 16.sp),
-            Text('Đây sẽ là demo cho bảng đấu ${_selectedFormat} với seeding ${_selectedSeeding}'),
+            Text('Đây sẽ là demo cho bảng đấu $_selectedFormat với seeding $_selectedSeeding'),
           ],
         ),
         actions: [
@@ -712,7 +712,7 @@ class _EnhancedBracketManagementTabState extends State<EnhancedBracketManagement
             children: [
               Text('Danh sách người chơi sau khi seeding theo ${_seedingMethods.firstWhere((m) => m['key'] == _selectedSeeding)['label']}:'),
               SizedBox(height: 16.sp),
-              Container(
+              SizedBox(
                 height: 300,
                 child: ListView.builder(
                   itemCount: 16,
@@ -720,9 +720,9 @@ class _EnhancedBracketManagementTabState extends State<EnhancedBracketManagement
                     final participant = _generateMockParticipants(16)[index];
                     return ListTile(
                       leading: CircleAvatar(
-                        child: Text('${index + 1}'),
                         backgroundColor: AppTheme.primaryLight,
                         foregroundColor: Colors.white,
+                        child: Text('${index + 1}'),
                       ),
                       title: Text(participant.name),
                       subtitle: Text('Rank: ${participant.rank} • ELO: ${participant.elo}'),
