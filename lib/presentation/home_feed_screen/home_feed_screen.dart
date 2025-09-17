@@ -13,6 +13,9 @@ import './widgets/empty_feed_widget.dart';
 import './widgets/feed_tab_widget.dart';
 import './widgets/feed_post_card_widget.dart';
 
+// ✅ Role-based barrel imports
+import '../roles/roles.dart';
+
 class HomeFeedScreen extends StatefulWidget {
   const HomeFeedScreen({super.key});
 

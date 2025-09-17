@@ -5,6 +5,7 @@ import 'package:sizer/sizer.dart';
 import '../core/app_export.dart';
 import '../widgets/custom_error_widget.dart';
 import './services/supabase_service.dart';
+import './guards/role_guard.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -65,8 +66,12 @@ class MyApp extends StatelessWidget {
         },
         // 🚨 END CRITICAL SECTION
         debugShowCheckedModeBanner: false,
+        // ✅ Role-based routing with protection
+        onGenerateRoute: AppRoutes.onGenerateRoute,
         routes: AppRoutes.routes,
         initialRoute: AppRoutes.initial,
+        // ✅ Global navigation key for role redirects
+        navigatorKey: RoleGuard.navigatorKey,
       );
     });
   }
