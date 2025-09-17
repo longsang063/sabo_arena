@@ -5,6 +5,8 @@ import 'package:sabo_arena/presentation/tournament_list_screen/widgets/tournamen
 import 'package:sabo_arena/presentation/tournament_list_screen/widgets/tournament_filter_bottom_sheet.dart';
 import 'package:sabo_arena/presentation/tournament_list_screen/widgets/tournament_search_delegate.dart';
 import 'package:sabo_arena/services/tournament_service.dart';
+import 'package:sabo_arena/services/user_service.dart';
+import 'package:sabo_arena/presentation/tournament_creation_wizard/tournament_creation_wizard.dart';
 
 
 class TournamentListScreen extends StatefulWidget {
@@ -20,6 +22,7 @@ class _TournamentListScreenState extends State<TournamentListScreen>
   final TournamentService _tournamentService = TournamentService.instance;
   bool _isLoading = true;
   String _selectedTab = 'upcoming';
+  bool _isClubRole = false; // club_owner or admin
   Map<String, dynamic> _currentFilters = {
     'locationRadius': 10.0,
     'entryFeeRange': <String>[],
@@ -39,6 +42,19 @@ class _TournamentListScreenState extends State<TournamentListScreen>
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_onTabChanged);
     _loadTournaments();
+    _loadUserRole();
+  }
+
+  Future<void> _loadUserRole() async {
+    try {
+      final profile = await UserService.instance.getCurrentUserProfile();
+      if (!mounted) return;
+      setState(() {
+        _isClubRole = (profile?.role == 'club_owner') || (profile?.role == 'admin');
+      });
+    } catch (_) {
+      // Keep default (false) if cannot determine
+    }
   }
 
   Future<void> _loadTournaments() async {
@@ -175,10 +191,8 @@ class _TournamentListScreenState extends State<TournamentListScreen>
         ),
       ),
       body: _buildBody(),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showFilterBottomSheet(context),
-        child: const Icon(Icons.filter_list),
-      ),
+      floatingActionButton: _buildFloatingButtons(context),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: SafeArea(
         child: Container(
           decoration: BoxDecoration(
@@ -245,6 +259,40 @@ class _TournamentListScreenState extends State<TournamentListScreen>
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildFloatingButtons(BuildContext context) {
+    if (_isClubRole) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton.extended(
+            onPressed: _openTournamentWizard,
+            icon: const Icon(Icons.add),
+            label: const Text('Tạo giải đấu'),
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton(
+            onPressed: () => _showFilterBottomSheet(context),
+            tooltip: 'Bộ lọc',
+            child: const Icon(Icons.filter_list),
+          ),
+        ],
+      );
+    }
+    return FloatingActionButton(
+      onPressed: () => _showFilterBottomSheet(context),
+      child: const Icon(Icons.filter_list),
+    );
+  }
+
+  void _openTournamentWizard() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const TournamentCreationWizard(),
       ),
     );
   }
