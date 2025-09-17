@@ -6,7 +6,8 @@ import 'package:sabo_arena/presentation/tournament_list_screen/widgets/tournamen
 import 'package:sabo_arena/presentation/tournament_list_screen/widgets/tournament_search_delegate.dart';
 import 'package:sabo_arena/services/tournament_service.dart';
 import 'package:sabo_arena/services/user_service.dart';
-import 'package:sabo_arena/presentation/tournament_creation_wizard/tournament_creation_wizard.dart';
+// ✅ Using role-based barrel import for club screens
+import 'package:sabo_arena/presentation/roles/club/club_screens.dart';
 
 
 class TournamentListScreen extends StatefulWidget {
